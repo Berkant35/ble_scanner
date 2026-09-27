@@ -1,0 +1,29 @@
+name: ble_scanner
+description: Raw BLE advertisement scanner (RSSI, manufacturer data, monotonic timestamps) for Android and iOS. Built for BeneathSOS.
+version: 0.1.0
+repository: https://github.com/Berkant35/ble_scanner
+issue_tracker: https://github.com/Berkant35/ble_scanner/issues
+
+environment:
+  sdk: ^3.13.4
+  flutter: '>=3.47.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  pigeon: ^29.0.4
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: org.beneathsos.ble_scanner
+        pluginClass: BleScannerPlugin
+      ios:
+        pluginClass: BleScannerPlugin

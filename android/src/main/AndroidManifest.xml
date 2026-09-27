@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Android 12+: scan permission. No `neverForLocation`: that flag makes Android filter some
+       beacon advertisements (e.g. Find My), which are exactly what BeneathSOS needs to see. -->
+  <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <!-- Android 11 and lower -->
+  <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+  <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+</manifest>

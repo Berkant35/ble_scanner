@@ -14,3 +14,4 @@
 - [ ] Hardware accessed only via `core/services`
 - [ ] No network calls / telemetry / secrets added
 - [ ] `docs/architecture.md` updated if a boundary, event, route or table changed
+- [ ] UI changes: [accessibility checklist](https://github.com/Berkant35/beneathsos/blob/main/docs/design/accessibility.md#pull-request-checklist-ui-changes) completed

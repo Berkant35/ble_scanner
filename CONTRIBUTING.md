@@ -1,6 +1,7 @@
 # Contributing to BeneathSOS
 
 Thanks for helping! This project may be used in real disasters, so correctness beats speed.
+By participating you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 1. Read `CLAUDE.md` (rules — they apply to humans too) and `docs/architecture.md`.
 2. Install FVM, then `fvm install` in the repo you work on.

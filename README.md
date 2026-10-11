@@ -1,5 +1,8 @@
 # ble_scanner
 
+[![CI](https://github.com/Berkant35/ble_scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/Berkant35/ble_scanner/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 Raw BLE advertisement scanner for Flutter (Android + iOS), built for
 [BeneathSOS](https://github.com/Berkant35/beneathsos).
 

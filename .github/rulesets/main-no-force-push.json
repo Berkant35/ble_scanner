@@ -1,11 +1,12 @@
 {
-  "name": "main: no force push or deletion",
+  "name": "main + release: no force push, deletion or merge commits",
   "target": "branch",
   "enforcement": "active",
   "conditions": {
     "ref_name": {
       "include": [
-        "~DEFAULT_BRANCH"
+        "~DEFAULT_BRANCH",
+        "refs/heads/release/*"
       ],
       "exclude": []
     }
@@ -17,6 +18,9 @@
     },
     {
       "type": "non_fast_forward"
+    },
+    {
+      "type": "required_linear_history"
     }
   ]
 }

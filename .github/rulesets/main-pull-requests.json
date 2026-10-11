@@ -1,11 +1,12 @@
 {
-  "name": "main: contributions via pull request",
+  "name": "main + release: contributions via pull request",
   "target": "branch",
   "enforcement": "active",
   "conditions": {
     "ref_name": {
       "include": [
-        "~DEFAULT_BRANCH"
+        "~DEFAULT_BRANCH",
+        "refs/heads/release/*"
       ],
       "exclude": []
     }

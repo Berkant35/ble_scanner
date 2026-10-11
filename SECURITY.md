@@ -4,8 +4,9 @@ BeneathSOS is safety-critical software. Please report vulnerabilities privately 
 **GitHub → Security → Report a vulnerability** (private advisory). Do not open public issues for them.
 
 ## Repository protections
-Applied as GitHub rulesets on `main` (definitions in `.github/rulesets/`):
-- **Everyone, including maintainers:** no force push, no branch deletion.
+Applied as GitHub rulesets on `main` and `release/*` (definitions in `.github/rulesets/`):
+- **Everyone, including maintainers:** no force push, no branch deletion, linear history (no merge
+  commits — pull requests are squashed or rebased).
 - **Contributors:** changes only through pull requests; review threads must be resolved; in
   repositories with CI, the `checks` job must pass. Maintainers (repository admins) may push directly
   while the project has a single maintainer; this will be tightened when a second maintainer joins.

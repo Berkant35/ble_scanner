@@ -297,6 +297,8 @@ data class ScanSample (
   val serviceUuids: List<String>,
   val localName: String? = null,
   val connectable: Boolean? = null,
+  /** Service data by service UUID (Android: lower case, iOS: upper case). */
+  val serviceData: Map<String, ByteArray>? = null,
   /** Monotonic receive time (Android elapsedRealtimeNanos, iOS CLOCK_UPTIME_RAW). */
   val monotonicNanos: Long,
   val wallClockMillis: Long
@@ -312,9 +314,10 @@ data class ScanSample (
       val serviceUuids = pigeonVar_list[5] as List<String>
       val localName = pigeonVar_list[6] as String?
       val connectable = pigeonVar_list[7] as Boolean?
-      val monotonicNanos = pigeonVar_list[8] as Long
-      val wallClockMillis = pigeonVar_list[9] as Long
-      return ScanSample(peripheralKey, rssi, txPower, companyId, manufacturerData, serviceUuids, localName, connectable, monotonicNanos, wallClockMillis)
+      val serviceData = pigeonVar_list[8] as Map<String, ByteArray>?
+      val monotonicNanos = pigeonVar_list[9] as Long
+      val wallClockMillis = pigeonVar_list[10] as Long
+      return ScanSample(peripheralKey, rssi, txPower, companyId, manufacturerData, serviceUuids, localName, connectable, serviceData, monotonicNanos, wallClockMillis)
     }
   }
   fun toList(): List<Any?> {
@@ -327,6 +330,7 @@ data class ScanSample (
       serviceUuids,
       localName,
       connectable,
+      serviceData,
       monotonicNanos,
       wallClockMillis,
     )
@@ -339,7 +343,7 @@ data class ScanSample (
       return true
     }
     val other = other as ScanSample
-    return MessagesPigeonUtils.deepEquals(this.peripheralKey, other.peripheralKey) && MessagesPigeonUtils.deepEquals(this.rssi, other.rssi) && MessagesPigeonUtils.deepEquals(this.txPower, other.txPower) && MessagesPigeonUtils.deepEquals(this.companyId, other.companyId) && MessagesPigeonUtils.deepEquals(this.manufacturerData, other.manufacturerData) && MessagesPigeonUtils.deepEquals(this.serviceUuids, other.serviceUuids) && MessagesPigeonUtils.deepEquals(this.localName, other.localName) && MessagesPigeonUtils.deepEquals(this.connectable, other.connectable) && MessagesPigeonUtils.deepEquals(this.monotonicNanos, other.monotonicNanos) && MessagesPigeonUtils.deepEquals(this.wallClockMillis, other.wallClockMillis)
+    return MessagesPigeonUtils.deepEquals(this.peripheralKey, other.peripheralKey) && MessagesPigeonUtils.deepEquals(this.rssi, other.rssi) && MessagesPigeonUtils.deepEquals(this.txPower, other.txPower) && MessagesPigeonUtils.deepEquals(this.companyId, other.companyId) && MessagesPigeonUtils.deepEquals(this.manufacturerData, other.manufacturerData) && MessagesPigeonUtils.deepEquals(this.serviceUuids, other.serviceUuids) && MessagesPigeonUtils.deepEquals(this.localName, other.localName) && MessagesPigeonUtils.deepEquals(this.connectable, other.connectable) && MessagesPigeonUtils.deepEquals(this.serviceData, other.serviceData) && MessagesPigeonUtils.deepEquals(this.monotonicNanos, other.monotonicNanos) && MessagesPigeonUtils.deepEquals(this.wallClockMillis, other.wallClockMillis)
   }
 
   override fun hashCode(): Int {
@@ -352,12 +356,13 @@ data class ScanSample (
     result = 31 * result + MessagesPigeonUtils.deepHash(this.serviceUuids)
     result = 31 * result + MessagesPigeonUtils.deepHash(this.localName)
     result = 31 * result + MessagesPigeonUtils.deepHash(this.connectable)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.serviceData)
     result = 31 * result + MessagesPigeonUtils.deepHash(this.monotonicNanos)
     result = 31 * result + MessagesPigeonUtils.deepHash(this.wallClockMillis)
     return result
   }
   override fun toString(): String {
-    return "ScanSample(peripheralKey=$peripheralKey, rssi=$rssi, txPower=$txPower, companyId=$companyId, manufacturerData=${manufacturerData?.contentToString()}, serviceUuids=$serviceUuids, localName=$localName, connectable=$connectable, monotonicNanos=$monotonicNanos, wallClockMillis=$wallClockMillis)"
+    return "ScanSample(peripheralKey=$peripheralKey, rssi=$rssi, txPower=$txPower, companyId=$companyId, manufacturerData=${manufacturerData?.contentToString()}, serviceUuids=$serviceUuids, localName=$localName, connectable=$connectable, serviceData=$serviceData, monotonicNanos=$monotonicNanos, wallClockMillis=$wallClockMillis)"
   }
 }
 
@@ -369,7 +374,9 @@ data class ScanSample (
 data class ScannerCapabilities (
   val platform: String,
   val codedPhySupported: Boolean,
-  val extendedAdvertisingSupported: Boolean
+  val extendedAdvertisingSupported: Boolean,
+  /** Whether this phone can advertise (Android: false while Bluetooth is off). */
+  val advertisingSupported: Boolean
 )
  {
   companion object {
@@ -377,7 +384,8 @@ data class ScannerCapabilities (
       val platform = pigeonVar_list[0] as String
       val codedPhySupported = pigeonVar_list[1] as Boolean
       val extendedAdvertisingSupported = pigeonVar_list[2] as Boolean
-      return ScannerCapabilities(platform, codedPhySupported, extendedAdvertisingSupported)
+      val advertisingSupported = pigeonVar_list[3] as Boolean
+      return ScannerCapabilities(platform, codedPhySupported, extendedAdvertisingSupported, advertisingSupported)
     }
   }
   fun toList(): List<Any?> {
@@ -385,6 +393,7 @@ data class ScannerCapabilities (
       platform,
       codedPhySupported,
       extendedAdvertisingSupported,
+      advertisingSupported,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -395,7 +404,7 @@ data class ScannerCapabilities (
       return true
     }
     val other = other as ScannerCapabilities
-    return MessagesPigeonUtils.deepEquals(this.platform, other.platform) && MessagesPigeonUtils.deepEquals(this.codedPhySupported, other.codedPhySupported) && MessagesPigeonUtils.deepEquals(this.extendedAdvertisingSupported, other.extendedAdvertisingSupported)
+    return MessagesPigeonUtils.deepEquals(this.platform, other.platform) && MessagesPigeonUtils.deepEquals(this.codedPhySupported, other.codedPhySupported) && MessagesPigeonUtils.deepEquals(this.extendedAdvertisingSupported, other.extendedAdvertisingSupported) && MessagesPigeonUtils.deepEquals(this.advertisingSupported, other.advertisingSupported)
   }
 
   override fun hashCode(): Int {
@@ -403,10 +412,63 @@ data class ScannerCapabilities (
     result = 31 * result + MessagesPigeonUtils.deepHash(this.platform)
     result = 31 * result + MessagesPigeonUtils.deepHash(this.codedPhySupported)
     result = 31 * result + MessagesPigeonUtils.deepHash(this.extendedAdvertisingSupported)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.advertisingSupported)
     return result
   }
   override fun toString(): String {
-    return "ScannerCapabilities(platform=$platform, codedPhySupported=$codedPhySupported, extendedAdvertisingSupported=$extendedAdvertisingSupported)"
+    return "ScannerCapabilities(platform=$platform, codedPhySupported=$codedPhySupported, extendedAdvertisingSupported=$extendedAdvertisingSupported, advertisingSupported=$advertisingSupported)"
+  }
+}
+
+/**
+ * What this phone advertises (a legacy packet: 31 bytes of advert + 31 of scan response).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class AdvertiseConfig (
+  /** 128-bit service UUID, in the advert. */
+  val serviceUuid: String,
+  /** iOS only (Android can only advertise the phone's own name). */
+  val localName: String? = null,
+  /** Android only (iOS apps cannot advertise service data), under [serviceUuid]. */
+  val serviceData: ByteArray? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AdvertiseConfig {
+      val serviceUuid = pigeonVar_list[0] as String
+      val localName = pigeonVar_list[1] as String?
+      val serviceData = pigeonVar_list[2] as ByteArray?
+      return AdvertiseConfig(serviceUuid, localName, serviceData)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      serviceUuid,
+      localName,
+      serviceData,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as AdvertiseConfig
+    return MessagesPigeonUtils.deepEquals(this.serviceUuid, other.serviceUuid) && MessagesPigeonUtils.deepEquals(this.localName, other.localName) && MessagesPigeonUtils.deepEquals(this.serviceData, other.serviceData)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.serviceUuid)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.localName)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.serviceData)
+    return result
+  }
+  override fun toString(): String {
+    return "AdvertiseConfig(serviceUuid=$serviceUuid, localName=$localName, serviceData=${serviceData?.contentToString()})"
   }
 }
 private open class MessagesPigeonCodec : StandardMessageCodec() {
@@ -437,6 +499,11 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
           ScannerCapabilities.fromList(it)
         }
       }
+      134.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AdvertiseConfig.fromList(it)
+        }
+      }
       else -> super.readValueOfType(type, buffer)
     }
   }
@@ -462,6 +529,10 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
         stream.write(133)
         writeValue(stream, value.toList())
       }
+      is AdvertiseConfig -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
       else -> super.writeValue(stream, value)
     }
   }
@@ -473,6 +544,8 @@ interface BleScannerHostApi {
   fun capabilities(): ScannerCapabilities
   fun startScan(config: ScanConfig)
   fun stopScan()
+  fun startAdvertising(config: AdvertiseConfig)
+  fun stopAdvertising()
 
   companion object {
     /** The codec used by BleScannerHostApi. */
@@ -547,6 +620,40 @@ interface BleScannerHostApi {
           channel.setMessageHandler(null)
         }
       }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.ble_scanner.BleScannerHostApi.startAdvertising$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val configArg = args[0] as AdvertiseConfig
+            val wrapped: List<Any?> = try {
+              api.startAdvertising(configArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              MessagesPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.ble_scanner.BleScannerHostApi.stopAdvertising$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.stopAdvertising()
+              listOf(null)
+            } catch (exception: Throwable) {
+              MessagesPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
     }
   }
 }
@@ -601,6 +708,44 @@ class BleScannerFlutterApi(private val binaryMessenger: BinaryMessenger, private
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     return suspendCancellableCoroutine { continuation ->
       val channelName = "dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onScanError$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(codeArg, messageArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(MessagesPigeonUtils.createConnectionError(channelName))
+        } 
+      }
+    }
+  }
+  suspend fun onAdvertiseStarted()
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onAdvertiseStarted$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(null) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(MessagesPigeonUtils.createConnectionError(channelName))
+        } 
+      }
+    }
+  }
+  suspend fun onAdvertiseError(codeArg: Long, messageArg: String)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onAdvertiseError$separatedMessageChannelSuffix"
       val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
       channel.send(listOf(codeArg, messageArg)) {
         if (it is List<*>) {

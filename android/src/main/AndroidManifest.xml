@@ -3,6 +3,8 @@
        beacon advertisements (e.g. Find My), which are exactly what BeneathSOS needs to see. -->
   <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <!-- Android 12+: victim mode advertises a beacon. -->
+  <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
   <!-- Android 11 and lower -->
   <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
   <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />

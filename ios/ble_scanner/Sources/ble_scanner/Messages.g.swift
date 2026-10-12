@@ -268,6 +268,8 @@ struct ScanSample: Hashable, CustomStringConvertible {
   var serviceUuids: [String]
   var localName: String? = nil
   var connectable: Bool? = nil
+  /// Service data by service UUID (Android: lower case, iOS: upper case).
+  var serviceData: [String: FlutterStandardTypedData]? = nil
   /// Monotonic receive time (Android elapsedRealtimeNanos, iOS CLOCK_UPTIME_RAW).
   var monotonicNanos: Int64
   var wallClockMillis: Int64
@@ -283,8 +285,9 @@ struct ScanSample: Hashable, CustomStringConvertible {
     let serviceUuids = pigeonVar_list[5] as! [String]
     let localName: String? = nilOrValue(pigeonVar_list[6])
     let connectable: Bool? = nilOrValue(pigeonVar_list[7])
-    let monotonicNanos = pigeonVar_list[8] as! Int64
-    let wallClockMillis = pigeonVar_list[9] as! Int64
+    let serviceData: [String: FlutterStandardTypedData]? = nilOrValue(pigeonVar_list[8])
+    let monotonicNanos = pigeonVar_list[9] as! Int64
+    let wallClockMillis = pigeonVar_list[10] as! Int64
 
     return ScanSample(
       peripheralKey: peripheralKey,
@@ -295,6 +298,7 @@ struct ScanSample: Hashable, CustomStringConvertible {
       serviceUuids: serviceUuids,
       localName: localName,
       connectable: connectable,
+      serviceData: serviceData,
       monotonicNanos: monotonicNanos,
       wallClockMillis: wallClockMillis
     )
@@ -309,6 +313,7 @@ struct ScanSample: Hashable, CustomStringConvertible {
       serviceUuids,
       localName,
       connectable,
+      serviceData,
       monotonicNanos,
       wallClockMillis,
     ]
@@ -317,7 +322,7 @@ struct ScanSample: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.peripheralKey, rhs.peripheralKey) && MessagesPigeonInternal.deepEquals(lhs.rssi, rhs.rssi) && MessagesPigeonInternal.deepEquals(lhs.txPower, rhs.txPower) && MessagesPigeonInternal.deepEquals(lhs.companyId, rhs.companyId) && MessagesPigeonInternal.deepEquals(lhs.manufacturerData, rhs.manufacturerData) && MessagesPigeonInternal.deepEquals(lhs.serviceUuids, rhs.serviceUuids) && MessagesPigeonInternal.deepEquals(lhs.localName, rhs.localName) && MessagesPigeonInternal.deepEquals(lhs.connectable, rhs.connectable) && MessagesPigeonInternal.deepEquals(lhs.monotonicNanos, rhs.monotonicNanos) && MessagesPigeonInternal.deepEquals(lhs.wallClockMillis, rhs.wallClockMillis)
+    return MessagesPigeonInternal.deepEquals(lhs.peripheralKey, rhs.peripheralKey) && MessagesPigeonInternal.deepEquals(lhs.rssi, rhs.rssi) && MessagesPigeonInternal.deepEquals(lhs.txPower, rhs.txPower) && MessagesPigeonInternal.deepEquals(lhs.companyId, rhs.companyId) && MessagesPigeonInternal.deepEquals(lhs.manufacturerData, rhs.manufacturerData) && MessagesPigeonInternal.deepEquals(lhs.serviceUuids, rhs.serviceUuids) && MessagesPigeonInternal.deepEquals(lhs.localName, rhs.localName) && MessagesPigeonInternal.deepEquals(lhs.connectable, rhs.connectable) && MessagesPigeonInternal.deepEquals(lhs.serviceData, rhs.serviceData) && MessagesPigeonInternal.deepEquals(lhs.monotonicNanos, rhs.monotonicNanos) && MessagesPigeonInternal.deepEquals(lhs.wallClockMillis, rhs.wallClockMillis)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -330,12 +335,13 @@ struct ScanSample: Hashable, CustomStringConvertible {
     MessagesPigeonInternal.deepHash(value: serviceUuids, hasher: &hasher)
     MessagesPigeonInternal.deepHash(value: localName, hasher: &hasher)
     MessagesPigeonInternal.deepHash(value: connectable, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: serviceData, hasher: &hasher)
     MessagesPigeonInternal.deepHash(value: monotonicNanos, hasher: &hasher)
     MessagesPigeonInternal.deepHash(value: wallClockMillis, hasher: &hasher)
   }
 
   public var description: String {
-    return "ScanSample(peripheralKey: \(String(describing: peripheralKey)), rssi: \(String(describing: rssi)), txPower: \(String(describing: txPower)), companyId: \(String(describing: companyId)), manufacturerData: \(String(describing: manufacturerData)), serviceUuids: \(String(describing: serviceUuids)), localName: \(String(describing: localName)), connectable: \(String(describing: connectable)), monotonicNanos: \(String(describing: monotonicNanos)), wallClockMillis: \(String(describing: wallClockMillis)))"
+    return "ScanSample(peripheralKey: \(String(describing: peripheralKey)), rssi: \(String(describing: rssi)), txPower: \(String(describing: txPower)), companyId: \(String(describing: companyId)), manufacturerData: \(String(describing: manufacturerData)), serviceUuids: \(String(describing: serviceUuids)), localName: \(String(describing: localName)), connectable: \(String(describing: connectable)), serviceData: \(String(describing: serviceData)), monotonicNanos: \(String(describing: monotonicNanos)), wallClockMillis: \(String(describing: wallClockMillis)))"
   }
 }
 
@@ -346,6 +352,8 @@ struct ScannerCapabilities: Hashable, CustomStringConvertible {
   var platform: String
   var codedPhySupported: Bool
   var extendedAdvertisingSupported: Bool
+  /// Whether this phone can advertise (Android: false while Bluetooth is off).
+  var advertisingSupported: Bool
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -353,11 +361,13 @@ struct ScannerCapabilities: Hashable, CustomStringConvertible {
     let platform = pigeonVar_list[0] as! String
     let codedPhySupported = pigeonVar_list[1] as! Bool
     let extendedAdvertisingSupported = pigeonVar_list[2] as! Bool
+    let advertisingSupported = pigeonVar_list[3] as! Bool
 
     return ScannerCapabilities(
       platform: platform,
       codedPhySupported: codedPhySupported,
-      extendedAdvertisingSupported: extendedAdvertisingSupported
+      extendedAdvertisingSupported: extendedAdvertisingSupported,
+      advertisingSupported: advertisingSupported
     )
   }
   func toList() -> [Any?] {
@@ -365,13 +375,14 @@ struct ScannerCapabilities: Hashable, CustomStringConvertible {
       platform,
       codedPhySupported,
       extendedAdvertisingSupported,
+      advertisingSupported,
     ]
   }
   static func == (lhs: ScannerCapabilities, rhs: ScannerCapabilities) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.platform, rhs.platform) && MessagesPigeonInternal.deepEquals(lhs.codedPhySupported, rhs.codedPhySupported) && MessagesPigeonInternal.deepEquals(lhs.extendedAdvertisingSupported, rhs.extendedAdvertisingSupported)
+    return MessagesPigeonInternal.deepEquals(lhs.platform, rhs.platform) && MessagesPigeonInternal.deepEquals(lhs.codedPhySupported, rhs.codedPhySupported) && MessagesPigeonInternal.deepEquals(lhs.extendedAdvertisingSupported, rhs.extendedAdvertisingSupported) && MessagesPigeonInternal.deepEquals(lhs.advertisingSupported, rhs.advertisingSupported)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -379,10 +390,61 @@ struct ScannerCapabilities: Hashable, CustomStringConvertible {
     MessagesPigeonInternal.deepHash(value: platform, hasher: &hasher)
     MessagesPigeonInternal.deepHash(value: codedPhySupported, hasher: &hasher)
     MessagesPigeonInternal.deepHash(value: extendedAdvertisingSupported, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: advertisingSupported, hasher: &hasher)
   }
 
   public var description: String {
-    return "ScannerCapabilities(platform: \(String(describing: platform)), codedPhySupported: \(String(describing: codedPhySupported)), extendedAdvertisingSupported: \(String(describing: extendedAdvertisingSupported)))"
+    return "ScannerCapabilities(platform: \(String(describing: platform)), codedPhySupported: \(String(describing: codedPhySupported)), extendedAdvertisingSupported: \(String(describing: extendedAdvertisingSupported)), advertisingSupported: \(String(describing: advertisingSupported)))"
+  }
+}
+
+/// What this phone advertises (a legacy packet: 31 bytes of advert + 31 of scan response).
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct AdvertiseConfig: Hashable, CustomStringConvertible {
+  /// 128-bit service UUID, in the advert.
+  var serviceUuid: String
+  /// iOS only (Android can only advertise the phone's own name).
+  var localName: String? = nil
+  /// Android only (iOS apps cannot advertise service data), under [serviceUuid].
+  var serviceData: FlutterStandardTypedData? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AdvertiseConfig? {
+    let serviceUuid = pigeonVar_list[0] as! String
+    let localName: String? = nilOrValue(pigeonVar_list[1])
+    let serviceData: FlutterStandardTypedData? = nilOrValue(pigeonVar_list[2])
+
+    return AdvertiseConfig(
+      serviceUuid: serviceUuid,
+      localName: localName,
+      serviceData: serviceData
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      serviceUuid,
+      localName,
+      serviceData,
+    ]
+  }
+  static func == (lhs: AdvertiseConfig, rhs: AdvertiseConfig) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return MessagesPigeonInternal.deepEquals(lhs.serviceUuid, rhs.serviceUuid) && MessagesPigeonInternal.deepEquals(lhs.localName, rhs.localName) && MessagesPigeonInternal.deepEquals(lhs.serviceData, rhs.serviceData)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("AdvertiseConfig")
+    MessagesPigeonInternal.deepHash(value: serviceUuid, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: localName, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: serviceData, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "AdvertiseConfig(serviceUuid: \(String(describing: serviceUuid)), localName: \(String(describing: localName)), serviceData: \(String(describing: serviceData)))"
   }
 }
 
@@ -407,6 +469,8 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
       return ScanSample.fromList(self.readValue() as! [Any?])
     case 133:
       return ScannerCapabilities.fromList(self.readValue() as! [Any?])
+    case 134:
+      return AdvertiseConfig.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -429,6 +493,9 @@ private class MessagesPigeonCodecWriter: FlutterStandardWriter {
       super.writeValue(value.toList())
     } else if let value = value as? ScannerCapabilities {
       super.writeByte(133)
+      super.writeValue(value.toList())
+    } else if let value = value as? AdvertiseConfig {
+      super.writeByte(134)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -456,6 +523,8 @@ protocol BleScannerHostApi {
   func capabilities() throws -> ScannerCapabilities
   func startScan(config: ScanConfig) throws
   func stopScan() throws
+  func startAdvertising(config: AdvertiseConfig) throws
+  func stopAdvertising() throws
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -518,6 +587,34 @@ class BleScannerHostApiSetup {
     } else {
       stopScanChannel.setMessageHandler(nil)
     }
+    let startAdvertisingChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.ble_scanner.BleScannerHostApi.startAdvertising\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      startAdvertisingChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let configArg = args[0] as! AdvertiseConfig
+        do {
+          try api.startAdvertising(config: configArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      startAdvertisingChannel.setMessageHandler(nil)
+    }
+    let stopAdvertisingChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.ble_scanner.BleScannerHostApi.stopAdvertising\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      stopAdvertisingChannel.setMessageHandler { _, reply in
+        do {
+          try api.stopAdvertising()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      stopAdvertisingChannel.setMessageHandler(nil)
+    }
   }
 }
 
@@ -526,6 +623,8 @@ protocol BleScannerFlutterApiProtocol {
   @MainActor func onSamples(samples samplesArg: [ScanSample]) async throws
   @MainActor func onAdapterStateChanged(state stateArg: AdapterState) async throws
   @MainActor func onScanError(code codeArg: Int64, message messageArg: String) async throws
+  @MainActor func onAdvertiseStarted() async throws
+  @MainActor func onAdvertiseError(code codeArg: Int64, message messageArg: String) async throws
 }
 class BleScannerFlutterApi: BleScannerFlutterApiProtocol {
   private let binaryMessenger: FlutterBinaryMessenger
@@ -580,6 +679,46 @@ class BleScannerFlutterApi: BleScannerFlutterApiProtocol {
   @MainActor func onScanError(code codeArg: Int64, message messageArg: String) async throws {
     return try await withCheckedThrowingContinuation { continuation in
       let channelName: String = "dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onScanError\(messageChannelSuffix)"
+      let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+      channel.sendMessage([codeArg, messageArg] as [Any?]) { response in
+        guard let listResponse = response as? [Any?] else {
+          continuation.resume(throwing: createConnectionError(withChannelName: channelName))
+          return
+        }
+        if listResponse.count > 1 {
+          let code: String = listResponse[0] as! String
+          let message: String? = nilOrValue(listResponse[1])
+          let details: String? = nilOrValue(listResponse[2])
+          continuation.resume(throwing: PigeonError(code: code, message: message, details: details))
+        } else {
+          continuation.resume()
+        }
+      }
+    }
+  }
+  @MainActor func onAdvertiseStarted() async throws {
+    return try await withCheckedThrowingContinuation { continuation in
+      let channelName: String = "dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onAdvertiseStarted\(messageChannelSuffix)"
+      let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+      channel.sendMessage(nil) { response in
+        guard let listResponse = response as? [Any?] else {
+          continuation.resume(throwing: createConnectionError(withChannelName: channelName))
+          return
+        }
+        if listResponse.count > 1 {
+          let code: String = listResponse[0] as! String
+          let message: String? = nilOrValue(listResponse[1])
+          let details: String? = nilOrValue(listResponse[2])
+          continuation.resume(throwing: PigeonError(code: code, message: message, details: details))
+        } else {
+          continuation.resume()
+        }
+      }
+    }
+  }
+  @MainActor func onAdvertiseError(code codeArg: Int64, message messageArg: String) async throws {
+    return try await withCheckedThrowingContinuation { continuation in
+      let channelName: String = "dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onAdvertiseError\(messageChannelSuffix)"
       let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
       channel.sendMessage([codeArg, messageArg] as [Any?]) { response in
         guard let listResponse = response as? [Any?] else {

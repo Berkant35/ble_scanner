@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:ble_scanner/src/messages.g.dart';
 
-/// Error reported by the native scanner (for example Android scan failure codes).
+/// Error reported by the native scanner or advertiser (for example Android failure codes).
 final class BleScanError implements Exception {
   /// Creates an error with the platform [code] and a human readable [message].
   const BleScanError(this.code, this.message);
@@ -29,6 +31,14 @@ class BleScanner implements BleScannerFlutterApi {
   final _samples = StreamController<List<ScanSample>>.broadcast();
   final _adapter = StreamController<AdapterState>.broadcast();
   final _errors = StreamController<BleScanError>.broadcast();
+  final _advertiseStarted = StreamController<void>.broadcast();
+  final _advertiseErrors = StreamController<BleScanError>.broadcast();
+
+  /// Most service data a legacy scan response holds next to a 128-bit UUID (31 − 2 − 16 − 2).
+  static const maxServiceDataBytes = 11;
+
+  /// Longest local name accepted (iOS puts it in the scan response with room to spare).
+  static const maxLocalNameBytes = 20;
 
   /// Batches of received advertisements, in arrival order.
   Stream<List<ScanSample>> get samples => _samples.stream;
@@ -61,10 +71,57 @@ class BleScanner implements BleScannerFlutterApi {
   /// Stops scanning and flushes buffered samples.
   Future<void> stop() => _host.stopScan();
 
+  /// Advertising confirmed by the platform (after every [startAdvertising]).
+  Stream<void> get advertiseStarted => _advertiseStarted.stream;
+
+  /// Advertising failures reported asynchronously (Android `AdvertiseCallback` codes, iOS errors).
+  Stream<BleScanError> get advertiseErrors => _advertiseErrors.stream;
+
+  /// Starts advertising [serviceUuid] — or replaces the payload when already advertising. Android
+  /// sends [serviceData] (not [localName]); iOS sends [localName] (not [serviceData]). Throws
+  /// [ArgumentError] when the payload does not fit a legacy packet.
+  Future<void> startAdvertising({
+    required String serviceUuid,
+    String? localName,
+    Uint8List? serviceData,
+  }) {
+    if ((serviceData?.length ?? 0) > maxServiceDataBytes) {
+      throw ArgumentError.value(
+        serviceData!.length,
+        'serviceData',
+        'at most $maxServiceDataBytes bytes',
+      );
+    }
+    if (localName != null &&
+        utf8.encode(localName).length > maxLocalNameBytes) {
+      throw ArgumentError.value(
+        localName,
+        'localName',
+        'at most $maxLocalNameBytes bytes',
+      );
+    }
+    return _host.startAdvertising(
+      AdvertiseConfig(
+        serviceUuid: serviceUuid,
+        localName: localName,
+        serviceData: serviceData,
+      ),
+    );
+  }
+
+  /// Stops advertising.
+  Future<void> stopAdvertising() => _host.stopAdvertising();
+
   /// Releases the Dart side. The instance cannot be used afterwards.
   Future<void> dispose() async {
     BleScannerFlutterApi.setUp(null);
-    await Future.wait([_samples.close(), _adapter.close(), _errors.close()]);
+    await Future.wait([
+      _samples.close(),
+      _adapter.close(),
+      _errors.close(),
+      _advertiseStarted.close(),
+      _advertiseErrors.close(),
+    ]);
   }
 
   @override
@@ -76,4 +133,11 @@ class BleScanner implements BleScannerFlutterApi {
   @override
   void onScanError(int code, String message) =>
       _errors.add(BleScanError(code, message));
+
+  @override
+  void onAdvertiseStarted() => _advertiseStarted.add(null);
+
+  @override
+  void onAdvertiseError(int code, String message) =>
+      _advertiseErrors.add(BleScanError(code, message));
 }

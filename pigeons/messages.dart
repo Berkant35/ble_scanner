@@ -64,6 +64,9 @@ class ScanSample {
   String? localName;
   bool? connectable;
 
+  /// Service data by service UUID (Android: lower case, iOS: upper case).
+  Map<String, Uint8List>? serviceData;
+
   /// Monotonic receive time (Android elapsedRealtimeNanos, iOS CLOCK_UPTIME_RAW).
   int monotonicNanos;
   int wallClockMillis;
@@ -75,11 +78,33 @@ class ScannerCapabilities {
     required this.platform,
     required this.codedPhySupported,
     required this.extendedAdvertisingSupported,
+    required this.advertisingSupported,
   });
 
   String platform;
   bool codedPhySupported;
   bool extendedAdvertisingSupported;
+
+  /// Whether this phone can advertise (Android: false while Bluetooth is off).
+  bool advertisingSupported;
+}
+
+/// What this phone advertises (a legacy packet: 31 bytes of advert + 31 of scan response).
+class AdvertiseConfig {
+  AdvertiseConfig({
+    required this.serviceUuid,
+    this.localName,
+    this.serviceData,
+  });
+
+  /// 128-bit service UUID, in the advert.
+  String serviceUuid;
+
+  /// iOS only (Android can only advertise the phone's own name).
+  String? localName;
+
+  /// Android only (iOS apps cannot advertise service data), under [serviceUuid].
+  Uint8List? serviceData;
 }
 
 @HostApi()
@@ -88,6 +113,8 @@ abstract class BleScannerHostApi {
   ScannerCapabilities capabilities();
   void startScan(ScanConfig config);
   void stopScan();
+  void startAdvertising(AdvertiseConfig config);
+  void stopAdvertising();
 }
 
 @FlutterApi()
@@ -95,4 +122,6 @@ abstract class BleScannerFlutterApi {
   void onSamples(List<ScanSample> samples);
   void onAdapterStateChanged(AdapterState state);
   void onScanError(int code, String message);
+  void onAdvertiseStarted();
+  void onAdvertiseError(int code, String message);
 }

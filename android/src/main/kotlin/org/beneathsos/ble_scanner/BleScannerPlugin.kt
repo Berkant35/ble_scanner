@@ -3,6 +3,9 @@ package org.beneathsos.ble_scanner
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.bluetooth.le.AdvertiseCallback
+import android.bluetooth.le.AdvertiseData
+import android.bluetooth.le.AdvertiseSettings
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
@@ -26,7 +29,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Raw BLE scanner. Keeps one long-running scan (Android allows at most 5 scan starts per 30 s),
- * buffers results and delivers them to Dart in batches.
+ * buffers results and delivers them to Dart in batches. Also advertises one service (victim mode).
  */
 class BleScannerPlugin : FlutterPlugin, BleScannerHostApi {
   private lateinit var context: Context
@@ -38,6 +41,7 @@ class BleScannerPlugin : FlutterPlugin, BleScannerHostApi {
   private var batchIntervalMs = 250L
   private var scanning = false
   private var pendingStart: Runnable? = null
+  private var advertising: AdvertiseCallback? = null
 
   private val adapter: BluetoothAdapter?
     get() = (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?)?.adapter
@@ -80,6 +84,7 @@ class BleScannerPlugin : FlutterPlugin, BleScannerHostApi {
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     stopScan()
+    stopAdvertising()
     context.unregisterReceiver(stateReceiver)
     BleScannerHostApi.setUp(binding.binaryMessenger, null)
     scope.cancel()
@@ -112,6 +117,7 @@ class BleScannerPlugin : FlutterPlugin, BleScannerHostApi {
       platform = "android",
       codedPhySupported = o && a?.isLeCodedPhySupported == true,
       extendedAdvertisingSupported = o && a?.isLeExtendedAdvertisingSupported == true,
+      advertisingSupported = a?.bluetoothLeAdvertiser != null,
     )
   }
 
@@ -165,6 +171,62 @@ class BleScannerPlugin : FlutterPlugin, BleScannerHostApi {
     flush()
   }
 
+  /**
+   * Advertises [AdvertiseConfig.serviceUuid] in the advert and the service data in the scan response
+   * (legacy, low latency, high power, not connectable, no timeout). A new call replaces the payload.
+   * Android cannot advertise a custom local name, so it is ignored.
+   */
+  @SuppressLint("MissingPermission")
+  override fun startAdvertising(config: AdvertiseConfig) {
+    stopAdvertising()
+    val advertiser = adapter?.bluetoothLeAdvertiser
+      ?: throw FlutterError("unavailable", "Bluetooth LE advertising unavailable (adapter off?)", null)
+    val uuid = ParcelUuid.fromString(config.serviceUuid)
+    val settings = AdvertiseSettings.Builder()
+      .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+      .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+      .setConnectable(false)
+      .setTimeout(0)
+      .build()
+    val advert = AdvertiseData.Builder()
+      .setIncludeDeviceName(false)
+      .setIncludeTxPowerLevel(false)
+      .addServiceUuid(uuid)
+      .build()
+    val response = AdvertiseData.Builder()
+      .setIncludeDeviceName(false)
+      .setIncludeTxPowerLevel(false)
+      .apply { config.serviceData?.let { addServiceData(uuid, it) } }
+      .build()
+    val callback = object : AdvertiseCallback() {
+      override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+        emit { flutterApi.onAdvertiseStarted() }
+      }
+
+      override fun onStartFailure(errorCode: Int) {
+        if (advertising === this) advertising = null
+        emit { flutterApi.onAdvertiseError(errorCode.toLong(), "advertise failed: $errorCode") }
+      }
+    }
+    try {
+      advertiser.startAdvertising(settings, advert, response, callback)
+      advertising = callback
+    } catch (e: SecurityException) {
+      emit { flutterApi.onAdvertiseError(-1, "unauthorized: ${e.message}") }
+    }
+  }
+
+  @SuppressLint("MissingPermission")
+  override fun stopAdvertising() {
+    val callback = advertising ?: return
+    advertising = null
+    try {
+      adapter?.bluetoothLeAdvertiser?.stopAdvertising(callback)
+    } catch (_: SecurityException) {
+      // Permission revoked while advertising; nothing left to stop.
+    }
+  }
+
   /** Android blocks apps that start more than 5 scans in 30 s; wait instead of failing silently. */
   private fun throttleDelayMs(): Long {
     val now = SystemClock.elapsedRealtime()
@@ -199,6 +261,7 @@ class BleScannerPlugin : FlutterPlugin, BleScannerHostApi {
       manufacturerData = companyId?.let { mfr?.get(it) },
       serviceUuids = record?.serviceUuids?.map { it.toString() } ?: emptyList(),
       localName = record?.deviceName,
+      serviceData = record?.serviceData?.entries?.associate { (k, v) -> k.toString() to v },
       connectable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) isConnectable else null,
       monotonicNanos = timestampNanos,
       wallClockMillis = System.currentTimeMillis(),

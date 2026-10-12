@@ -185,6 +185,7 @@ class ScanSample {
     required this.serviceUuids,
     this.localName,
     this.connectable,
+    this.serviceData,
     required this.monotonicNanos,
     required this.wallClockMillis,
   });
@@ -208,6 +209,9 @@ class ScanSample {
 
   bool? connectable;
 
+  /// Service data by service UUID (Android: lower case, iOS: upper case).
+  Map<String, Uint8List>? serviceData;
+
   /// Monotonic receive time (Android elapsedRealtimeNanos, iOS CLOCK_UPTIME_RAW).
   int monotonicNanos;
 
@@ -223,6 +227,7 @@ class ScanSample {
       serviceUuids,
       localName,
       connectable,
+      serviceData,
       monotonicNanos,
       wallClockMillis,
     ];
@@ -243,8 +248,10 @@ class ScanSample {
       serviceUuids: (result[5]! as List<Object?>).cast<String>(),
       localName: result[6] as String?,
       connectable: result[7] as bool?,
-      monotonicNanos: result[8]! as int,
-      wallClockMillis: result[9]! as int,
+      serviceData: (result[8] as Map<Object?, Object?>?)
+          ?.cast<String, Uint8List>(),
+      monotonicNanos: result[9]! as int,
+      wallClockMillis: result[10]! as int,
     );
   }
 
@@ -265,6 +272,7 @@ class ScanSample {
         _deepEquals(serviceUuids, other.serviceUuids) &&
         _deepEquals(localName, other.localName) &&
         _deepEquals(connectable, other.connectable) &&
+        _deepEquals(serviceData, other.serviceData) &&
         _deepEquals(monotonicNanos, other.monotonicNanos) &&
         _deepEquals(wallClockMillis, other.wallClockMillis);
   }
@@ -275,7 +283,7 @@ class ScanSample {
 
   @override
   String toString() {
-    return 'ScanSample(peripheralKey: $peripheralKey, rssi: $rssi, txPower: $txPower, companyId: $companyId, manufacturerData: $manufacturerData, serviceUuids: $serviceUuids, localName: $localName, connectable: $connectable, monotonicNanos: $monotonicNanos, wallClockMillis: $wallClockMillis)';
+    return 'ScanSample(peripheralKey: $peripheralKey, rssi: $rssi, txPower: $txPower, companyId: $companyId, manufacturerData: $manufacturerData, serviceUuids: $serviceUuids, localName: $localName, connectable: $connectable, serviceData: $serviceData, monotonicNanos: $monotonicNanos, wallClockMillis: $wallClockMillis)';
   }
 }
 
@@ -285,6 +293,7 @@ class ScannerCapabilities {
     required this.platform,
     required this.codedPhySupported,
     required this.extendedAdvertisingSupported,
+    required this.advertisingSupported,
   });
 
   String platform;
@@ -293,8 +302,16 @@ class ScannerCapabilities {
 
   bool extendedAdvertisingSupported;
 
+  /// Whether this phone can advertise (Android: false while Bluetooth is off).
+  bool advertisingSupported;
+
   List<Object?> _toList() {
-    return <Object?>[platform, codedPhySupported, extendedAdvertisingSupported];
+    return <Object?>[
+      platform,
+      codedPhySupported,
+      extendedAdvertisingSupported,
+      advertisingSupported,
+    ];
   }
 
   Object encode() {
@@ -307,6 +324,7 @@ class ScannerCapabilities {
       platform: result[0]! as String,
       codedPhySupported: result[1]! as bool,
       extendedAdvertisingSupported: result[2]! as bool,
+      advertisingSupported: result[3]! as bool,
     );
   }
 
@@ -324,7 +342,8 @@ class ScannerCapabilities {
         _deepEquals(
           extendedAdvertisingSupported,
           other.extendedAdvertisingSupported,
-        );
+        ) &&
+        _deepEquals(advertisingSupported, other.advertisingSupported);
   }
 
   @override
@@ -333,7 +352,65 @@ class ScannerCapabilities {
 
   @override
   String toString() {
-    return 'ScannerCapabilities(platform: $platform, codedPhySupported: $codedPhySupported, extendedAdvertisingSupported: $extendedAdvertisingSupported)';
+    return 'ScannerCapabilities(platform: $platform, codedPhySupported: $codedPhySupported, extendedAdvertisingSupported: $extendedAdvertisingSupported, advertisingSupported: $advertisingSupported)';
+  }
+}
+
+/// What this phone advertises (a legacy packet: 31 bytes of advert + 31 of scan response).
+class AdvertiseConfig {
+  AdvertiseConfig({
+    required this.serviceUuid,
+    this.localName,
+    this.serviceData,
+  });
+
+  /// 128-bit service UUID, in the advert.
+  String serviceUuid;
+
+  /// iOS only (Android can only advertise the phone's own name).
+  String? localName;
+
+  /// Android only (iOS apps cannot advertise service data), under [serviceUuid].
+  Uint8List? serviceData;
+
+  List<Object?> _toList() {
+    return <Object?>[serviceUuid, localName, serviceData];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static AdvertiseConfig decode(Object result) {
+    result as List<Object?>;
+    return AdvertiseConfig(
+      serviceUuid: result[0]! as String,
+      localName: result[1] as String?,
+      serviceData: result[2] as Uint8List?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AdvertiseConfig || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(serviceUuid, other.serviceUuid) &&
+        _deepEquals(localName, other.localName) &&
+        _deepEquals(serviceData, other.serviceData);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'AdvertiseConfig(serviceUuid: $serviceUuid, localName: $localName, serviceData: $serviceData)';
   }
 }
 
@@ -359,6 +436,9 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is ScannerCapabilities) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
+    } else if (value is AdvertiseConfig) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
     }
@@ -379,6 +459,8 @@ class _PigeonCodec extends StandardMessageCodec {
         return ScanSample.decode(readValue(buffer)!);
       case 133:
         return ScannerCapabilities.decode(readValue(buffer)!);
+      case 134:
+        return AdvertiseConfig.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -477,6 +559,44 @@ class BleScannerHostApi {
       isNullValid: true,
     );
   }
+
+  Future<void> startAdvertising(AdvertiseConfig config) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.ble_scanner.BleScannerHostApi.startAdvertising$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[config],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> stopAdvertising() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.ble_scanner.BleScannerHostApi.stopAdvertising$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
 }
 
 abstract class BleScannerFlutterApi {
@@ -487,6 +607,10 @@ abstract class BleScannerFlutterApi {
   void onAdapterStateChanged(AdapterState state);
 
   void onScanError(int code, String message);
+
+  void onAdvertiseStarted();
+
+  void onAdvertiseError(int code, String message);
 
   static void setUp(
     BleScannerFlutterApi? api, {
@@ -562,6 +686,55 @@ abstract class BleScannerFlutterApi {
           final String arg_message = args[1]! as String;
           try {
             api.onScanError(arg_code, arg_message);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onAdvertiseStarted$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          try {
+            api.onAdvertiseStarted();
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.ble_scanner.BleScannerFlutterApi.onAdvertiseError$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final int arg_code = args[0]! as int;
+          final String arg_message = args[1]! as String;
+          try {
+            api.onAdvertiseError(arg_code, arg_message);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

@@ -13,11 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      # TODO(setup): pin every action to a full commit SHA before enabling branch protection.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
-      - uses: kuhnroyal/flutter-fvm-config-action/setup@v3
+      - uses: kuhnroyal/flutter-fvm-config-action/setup@c378498f1d1962d33039c3989411093ef8a17b2c # v3.3
       - run: flutter pub get
       - run: dart format --set-exit-if-changed .
-      - run: flutter analyze --fatal-infos
-      - run: flutter test
+      # Flutter packages use the flutter tools; pure Dart packages (e.g. rubble_core) the dart tools.
+      - name: analyze
+        run: |
+          if grep -q "sdk: flutter" pubspec.yaml; then flutter analyze --fatal-infos; else dart analyze --fatal-infos; fi
+      - name: test
+        run: |
+          if grep -q "sdk: flutter" pubspec.yaml; then flutter test; else dart test; fi

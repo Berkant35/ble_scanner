@@ -1,6 +1,6 @@
 name: ble_scanner
 description: Raw BLE advertisement scanner (RSSI, manufacturer and service data, monotonic timestamps) and a one-service advertiser for Android and iOS. Built for BeneathSOS.
-version: 0.2.0
+version: 0.2.1
 repository: https://github.com/Berkant35/ble_scanner
 issue_tracker: https://github.com/Berkant35/ble_scanner/issues
 

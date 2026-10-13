@@ -1,3 +1,7 @@
+## 0.2.1
+- Android: only the current advert reports started / failed (a replaced one no longer fails the new one).
+- iOS: no `stopAdvertising` before the peripheral manager is powered on.
+
 ## 0.2.0
 - Advertising: `startAdvertising` (service UUID; service data on Android, local name on iOS; payload
   checked against a legacy packet), `stopAdvertising`, `advertiseStarted` / `advertiseErrors` streams,

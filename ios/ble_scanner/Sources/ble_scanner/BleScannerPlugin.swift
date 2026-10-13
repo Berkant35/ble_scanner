@@ -81,7 +81,6 @@ public class BleScannerPlugin: NSObject, FlutterPlugin, BleScannerHostApi, CBCen
   /// replaces the payload.
   func startAdvertising(config: AdvertiseConfig) throws {
     let manager = peripheralManager()
-    manager.stopAdvertising()
     guard manager.state == .poweredOn else {
       pendingAdvert = config  // started from peripheralManagerDidUpdateState
       return
@@ -91,10 +90,11 @@ public class BleScannerPlugin: NSObject, FlutterPlugin, BleScannerHostApi, CBCen
 
   func stopAdvertising() {
     pendingAdvert = nil
-    peripheral?.stopAdvertising()
+    if peripheral?.state == .poweredOn { peripheral?.stopAdvertising() }
   }
 
   private func advertise(_ config: AdvertiseConfig, on manager: CBPeripheralManager) {
+    manager.stopAdvertising()  // replaces the payload; only valid once powered on
     var data: [String: Any] = [CBAdvertisementDataServiceUUIDsKey: [CBUUID(string: config.serviceUuid)]]
     if let name = config.localName { data[CBAdvertisementDataLocalNameKey] = name }
     manager.startAdvertising(data)

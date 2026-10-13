@@ -198,20 +198,23 @@ class BleScannerPlugin : FlutterPlugin, BleScannerHostApi {
       .setIncludeTxPowerLevel(false)
       .apply { config.serviceData?.let { addServiceData(uuid, it) } }
       .build()
+    // Only the current advert reports: one replaced a moment ago must not fail the new one.
     val callback = object : AdvertiseCallback() {
       override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
-        emit { flutterApi.onAdvertiseStarted() }
+        if (advertising === this) emit { flutterApi.onAdvertiseStarted() }
       }
 
       override fun onStartFailure(errorCode: Int) {
-        if (advertising === this) advertising = null
+        if (advertising !== this) return
+        advertising = null
         emit { flutterApi.onAdvertiseError(errorCode.toLong(), "advertise failed: $errorCode") }
       }
     }
     try {
-      advertiser.startAdvertising(settings, advert, response, callback)
       advertising = callback
+      advertiser.startAdvertising(settings, advert, response, callback)
     } catch (e: SecurityException) {
+      advertising = null
       emit { flutterApi.onAdvertiseError(-1, "unauthorized: ${e.message}") }
     }
   }
